@@ -1,6 +1,6 @@
 {
 	"name": "@kitsuned/webos-execbus",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"license": "MIT",
 	"scripts": {
 		"build": "tsc"

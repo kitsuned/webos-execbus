@@ -9,8 +9,30 @@ import { isLegacyLunaSendRole } from './os-detect';
 type AnyRecord = Record<string, any>;
 
 export type ExecBusConfig = {
+	/**
+	 * Corresponds to the `-a` flag.
+	 * Available only for privileged (aka unjailed) services.
+	 * Defaults to null on all webOS versions.
+	 */
 	appId?: string;
+
+	/**
+	 * Corresponds to the `-m` flag.
+	 * Available for both jailed and privileged services.
+	 * Defaults to `com.webos.lunasend[pub]-{pid}` on webOS >= 4.
+	 * Defaults to null on webOS < 4.
+	 */
 	serviceId?: string;
+
+	/**
+	 * Forces setting a Service ID on webOS < 4 to spoof a system namespace.
+	 *
+	 * Warning: this prevents running multiple luna-send instances simultaneously,
+	 * as the service name must be unique on the bus.
+	 *
+	 * Use only if required by the target service.
+	 * Has no effect on webOS >= 4.
+	 */
 	preferExplicitServiceId?: boolean;
 };
 
