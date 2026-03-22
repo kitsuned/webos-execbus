@@ -1,48 +1,40 @@
 import { spawn } from 'child_process';
-import { randomBytes } from 'crypto';
 
 import { AsyncSink } from '@kitsuned/async-utils';
 
-import { isLegacyBus } from '@kitsuned/webos-service';
 import type { Client, LunaResponse } from '@kitsuned/webos-service';
+
+import { isLegacyLunaSendRole } from './os-detect';
 
 type AnyRecord = Record<string, any>;
 
 export type ExecBusConfig = {
 	appId?: string;
 	serviceId?: string;
+	preferExplicitServiceId?: boolean;
 };
-
-function generateId(size: number = 4): string {
-	return randomBytes(size).toString('hex');
-}
 
 export class ExecBus implements Client {
 	public readonly id: string | null = null;
 
 	private readonly command: string;
-	private readonly extraArgs: (string | (() => string))[] = [];
+	private readonly extraArgs: string[] = [];
 
 	public constructor(config: ExecBusConfig = {}) {
 		const privileged = process.getuid!() === 0;
 
 		// luna-send is not accessible in jail
-		this.command = privileged ? '/usr/bin/luna-send' : '/usr/bin/luna-send-pub';
+		this.command = privileged ? 'luna-send' : 'luna-send-pub';
 
 		if (config.serviceId) {
 			this.id = config.serviceId;
-			this.extraArgs.push('-m', config.serviceId);
-		} else if (isLegacyBus) {
+			this.extraArgs.push('-m', this.id);
+		} else if (isLegacyLunaSendRole && config.preferExplicitServiceId) {
 			// the legacy luna-send[-pub] implementation sets neither service id nor app id,
-			// so services will not recognize the sender
-			//
-			// while we could use `com.palm.lunasend[pub]`, that would prevent running parallel
-			// luna-send instances due to a service name conflict
-			//
-			// obviously, i don't want to introduce mutexes into this library
-			//
-			// so, i borrow `com.palm.luna-*` from com.palm.webappmgr
-			this.extraArgs.push('-m', () => `com.palm.luna-${process.pid}-execbus-${generateId()}`);
+			// so picky system services will not recognize the sender
+			// see README for details
+			this.id = privileged ? 'com.palm.lunasend' : 'com.palm.lunasendpub';
+			this.extraArgs.push('-m', this.id);
 		}
 
 		if (config.appId) {
@@ -74,7 +66,7 @@ export class ExecBus implements Client {
 	): () => void {
 		const child = spawn(
 			this.command,
-			[...this.getExtraArgs(), '-i', uri, JSON.stringify(params)],
+			[...this.extraArgs, '-i', uri, JSON.stringify(params)],
 			// 'inherit' is not supported on node 0.10, pipe to stderr manually
 			{ stdio: ['ignore', 'pipe', process.stderr] },
 		);
@@ -124,9 +116,5 @@ export class ExecBus implements Client {
 		} finally {
 			cancel();
 		}
-	}
-
-	private getExtraArgs(): string[] {
-		return this.extraArgs.map(arg => typeof arg === 'function' ? arg() : arg);
 	}
 }
