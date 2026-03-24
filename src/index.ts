@@ -1,12 +1,8 @@
 import { spawn } from 'child_process';
 
-import { AsyncSink } from '@kitsuned/async-utils';
-
-import type { Client, LunaResponse } from '@kitsuned/webos-service';
+import { LunaClient, type LunaResponse } from '@kitsuned/webos-luna-isomorphic-client';
 
 import { isLegacyLunaSendRole } from './os-detect';
-
-type AnyRecord = Record<string, any>;
 
 export type ExecBusConfig = {
 	/**
@@ -36,13 +32,15 @@ export type ExecBusConfig = {
 	preferExplicitServiceId?: boolean;
 };
 
-export class ExecBus implements Client {
+export class ExecBus extends LunaClient {
 	public readonly id: string | null = null;
 
 	private readonly command: string;
 	private readonly extraArgs: string[] = [];
 
 	public constructor(config: ExecBusConfig = {}) {
+		super();
+
 		const privileged = process.getuid!() === 0;
 
 		// luna-send is not accessible in jail
@@ -68,22 +66,9 @@ export class ExecBus implements Client {
 		}
 	}
 
-	public oneshot<T extends AnyRecord>(
+	public override subscribe<T extends Record<string, any>>(
 		uri: string,
-		params: AnyRecord = {},
-	): Promise<LunaResponse<T>> {
-		return new Promise(resolve => {
-			const cancel = this.subscribe<T>(uri, params, response => {
-				cancel();
-
-				resolve(response);
-			});
-		});
-	}
-
-	public subscribe<T extends AnyRecord>(
-		uri: string,
-		params: AnyRecord,
+		params: Record<string, any>,
 		callback: (response: LunaResponse<T>) => void,
 	): () => void {
 		const child = spawn(
@@ -124,19 +109,5 @@ export class ExecBus implements Client {
 		});
 
 		return () => child.kill();
-	}
-
-	public async* stream<T extends AnyRecord>(
-		uri: string,
-		params: AnyRecord = { subscribe: true },
-	): AsyncGenerator<LunaResponse<T>, void> {
-		const sink = new AsyncSink<LunaResponse<T>>();
-		const cancel = this.subscribe<T>(uri, params, payload => sink.push(payload));
-
-		try {
-			yield* sink;
-		} finally {
-			cancel();
-		}
 	}
 }

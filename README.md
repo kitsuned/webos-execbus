@@ -1,7 +1,7 @@
 # @kitsuned/webos-execbus
 
-Exposes the same client interface as [`@kitsuned/webos-service`](https://github.com/kitsuned/webos-service) but
-different implementation.
+Implements [Isomorphic Luna Client](https://github.com/kitsuned/webos-luna-isomorphic-client) for webOS JS Services
+using `luna-send`.
 
 It can be used as a drop-in replacement where a regular client would normally be used, without requiring changes to
 calling code.
@@ -47,6 +47,8 @@ Under normal conditions, JS services communicate with Luna Bus using
 [`palmbus`](https://github.com/webosose/nodejs-module-webos-sysbus), which is usually sufficient. In practice,
 however, there is a class of services that are technically reachable but effectively inaccessible.
 
+### Legacy Service ID checks
+
 This behavior originates from early versions of webOS TV (≤ 2), where the security model was primitive. The system
 relied on a strict separation between public and private buses, which was not particularly flexible. As a result, some
 services implemented their own additional checks on the caller's Service ID to enforce access control.
@@ -64,6 +66,16 @@ is delivered but the service itself may reject it. For example, if the caller's 
 namespace such as `com.palm.*`, `com.webos.*`, or `com.lge.*`, the request is denied. Typical examples include
 `com.webos.settingsservice` and `com.webos.notification`, where access is effectively restricted by internal logic
 rather than ACG policies.
+
+### Methods with `ares.webos.cli` ACG
+
+There is also a separate class of services that expose methods under `ares.webos.cli` ACG, typically in the `/dev`
+category. For example: `com.webos.applicationManager` and `com.webos.appInstallService`.
+
+These methods are not intended for untrusted applications and are not marked as public. Instead, they are designed to
+be used from the jailed shell provided by Developer Mode.
+
+Such methods are callable via execbus because luna-send-pub has the `ares.webos.cli` role in addition to `public`.
 
 ## What the library does
 
@@ -112,6 +124,10 @@ such cases, this approach provides a way to work within the existing isolation m
 
 In all other situations, you should not use it. If a service works correctly through the standard `palmbus` handle,
 there is no benefit in introducing this workaround.
+
+# Credits
+
+Piotr Dobrowolski (aka [@informatic](https://github.com/Informatic)) [introduced](https://github.com/webosbrew/webos-homebrew-channel/commit/00ef2c7e0590061c836449fb09beaf662acfee8c#diff-4af3526582c1235fe0828611e763d56d61a4e8988109050b50c90f3e428f1eee) the execbus technique in [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel).
 
 # License
 
