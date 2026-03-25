@@ -110,7 +110,7 @@ export class ExecBus extends LunaClient {
 
 			callback({
 				returnValue: false,
-				errorCode: -1,
+				errorCode: -100,
 				errorText: `${this.command} exited with non-zero code: ${code}`,
 			});
 		});
