@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 
+/** @internal */
 export const majorOsVersion = (() => {
 	try {
 		// may contain junk on MStar HAL
@@ -25,4 +26,5 @@ export const majorOsVersion = (() => {
 	}
 })();
 
+/** @internal */
 export const isLegacyLunaSendRole = majorOsVersion < 4;

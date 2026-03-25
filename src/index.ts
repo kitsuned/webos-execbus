@@ -33,6 +33,13 @@ export type ExecBusConfig = {
 };
 
 export class ExecBus extends LunaClient {
+	/**
+	 * Whether multiple calls can run in parallel when an explicit service ID (`-m`) is used with luna-send.
+	 *
+	 * @see {@link https://github.com/kitsuned/webos-execbus#limitations-on-older-systems}
+	 * */
+	public static readonly supportsParallelWithExplicitId: boolean = !isLegacyLunaSendRole;
+
 	public readonly id: string | null = null;
 
 	private readonly command: string;
