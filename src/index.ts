@@ -30,6 +30,12 @@ export type ExecBusConfig = {
 	 * Has no effect on webOS >= 4.
 	 */
 	preferExplicitServiceId?: boolean;
+
+	/**
+	 * Overrides automatic privilege detection for command selection.
+	 * Defaults to current process UID (`uid === 0` means privileged).
+	 */
+	privileged?: boolean;
 };
 
 export class ExecBus extends LunaClient {
@@ -48,7 +54,7 @@ export class ExecBus extends LunaClient {
 	public constructor(config: ExecBusConfig = {}) {
 		super();
 
-		const privileged = process.getuid!() === 0;
+		const privileged = config.privileged ?? process.getuid!() === 0;
 
 		// luna-send is not accessible in jail
 		this.command = privileged ? 'luna-send' : 'luna-send-pub';

@@ -38,6 +38,12 @@ export type ExecBusConfig = {
 	 * Has no effect on webOS >= 4.
 	 */
 	preferExplicitServiceId?: boolean;
+
+	/**
+	 * Overrides automatic privilege detection for command selection.
+	 * Defaults to current process UID (`uid === 0` means privileged).
+	 */
+	privileged?: boolean;
 };
 ```
 
